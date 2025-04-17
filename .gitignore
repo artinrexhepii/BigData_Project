@@ -1,0 +1,28 @@
+# Python virtual environment
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Log files
+*.log
+etl_log.txt
+
+# Environment variables and secrets
+.env
+*.env
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Database files
+*.sql
+*.sqlite
+*.db
