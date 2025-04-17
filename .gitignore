@@ -26,3 +26,6 @@ Thumbs.db
 *.sql
 *.sqlite
 *.db
+
+# Exceptions - files to include despite above patterns
+!DWH_MONDIAL.sql
