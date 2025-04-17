@@ -23,7 +23,7 @@ etl_log.txt
 Thumbs.db
 
 # Database files
-*.sql
+
 *.sqlite
 *.db
 

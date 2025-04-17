@@ -1,7 +1,7 @@
 import mysql.connector
 from datetime import datetime
 
-# 🔧 CONFIG - replace with your DB credentials
+# CONFIG
 config = {
     "host": "localhost",
     "user": "root",
@@ -10,7 +10,7 @@ config = {
     "database_dwh": "DWH_Mondial"
 }
 
-# 🚀 Connect to MySQL
+# Connect to MySQL
 conn = mysql.connector.connect(
     host=config["host"],
     user=config["user"],
@@ -18,7 +18,7 @@ conn = mysql.connector.connect(
 )
 cursor = conn.cursor()
 
-# 📌 Helper to switch databases
+# Helper to switch databases
 def use_db(db_name):
     cursor.execute(f"USE {db_name}")
 
