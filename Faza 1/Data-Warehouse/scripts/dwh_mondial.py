@@ -39,65 +39,85 @@ def log_message(message):
     with open(config["log_file"], "a") as f:
         f.write(log_entry + "\n")
 
-# Step 1: Sync Country → Dim_Country
 log_message("Starting ETL process")
 use_db(config["database_dwh"])
+
+# Step 1: Sync Country → Dim_Country
 cursor.execute("""
-INSERT IGNORE INTO Dim_Country (CountryCode, CountryName, Government)
+INSERT INTO Dim_Country (CountryCode, CountryName, Government)
 SELECT c.Code, c.Name, p.Government
 FROM Mondial.country c
-LEFT JOIN Mondial.politics p ON c.Code = p.Country;
+LEFT JOIN Mondial.politics p ON c.Code = p.Country
+ON DUPLICATE KEY UPDATE
+    CountryName = VALUES(CountryName),
+    Government = VALUES(Government);
 """)
 log_message(f"Synced Country data - {cursor.rowcount} rows affected")
 
 # Step 2: Sync Organization → Dim_Organization
 cursor.execute("""
-INSERT IGNORE INTO Dim_Organization (OrgCode, OrgName, City, CountryCode)
+INSERT INTO Dim_Organization (OrgCode, OrgName, City, CountryCode)
 SELECT Abbreviation, Name, City, Country
 FROM Mondial.organization
-WHERE Country IS NOT NULL;
+WHERE Country IS NOT NULL
+ON DUPLICATE KEY UPDATE
+    OrgName = VALUES(OrgName),
+    City = VALUES(City),
+    CountryCode = VALUES(CountryCode);
 """)
 log_message(f"Synced Organization data - {cursor.rowcount} rows affected")
 
 # Step 3: Sync Dates from Politics (Independence)
 cursor.execute("""
-INSERT IGNORE INTO Dim_Date (DateID, Year, Month, Day)
+INSERT INTO Dim_Date (DateID, Year, Month, Day)
 SELECT DISTINCT Independence, 
        YEAR(Independence), 
        MONTH(Independence), 
        DAY(Independence)
 FROM Mondial.politics
-WHERE Independence IS NOT NULL;
+WHERE Independence IS NOT NULL
+ON DUPLICATE KEY UPDATE
+    Year = VALUES(Year),
+    Month = VALUES(Month),
+    Day = VALUES(Day);
 """)
 log_message(f"Synced Independence dates - {cursor.rowcount} rows affected")
 
 # Step 4: Sync Dates from Organization (Established)
 cursor.execute("""
-INSERT IGNORE INTO Dim_Date (DateID, Year, Month, Day)
+INSERT INTO Dim_Date (DateID, Year, Month, Day)
 SELECT DISTINCT Established,
        YEAR(Established),
        MONTH(Established),
        DAY(Established)
 FROM Mondial.organization
-WHERE Established IS NOT NULL;
+WHERE Established IS NOT NULL
+ON DUPLICATE KEY UPDATE
+    Year = VALUES(Year),
+    Month = VALUES(Month),
+    Day = VALUES(Day);
 """)
 log_message(f"Synced Organization dates - {cursor.rowcount} rows affected")
 
 # Step 5: Insert into Fact Table - Independence Events
 cursor.execute("""
-INSERT IGNORE INTO Facts_GeopoliticalEvents (CountryCode, DateID, EventType)
+INSERT INTO Facts_GeopoliticalEvents (CountryCode, DateID, EventType)
 SELECT p.Country, p.Independence, 'Independence'
 FROM Mondial.politics p
-WHERE p.Independence IS NOT NULL;
+WHERE p.Independence IS NOT NULL
+ON DUPLICATE KEY UPDATE
+    EventType = VALUES(EventType);
 """)
 log_message(f"Added Independence events - {cursor.rowcount} rows affected")
 
 # Step 6: Insert into Fact Table - Organization Founded
 cursor.execute("""
-INSERT IGNORE INTO Facts_GeopoliticalEvents (OrgCode, CountryCode, DateID, EventType)
+INSERT INTO Facts_GeopoliticalEvents (OrgCode, CountryCode, DateID, EventType)
 SELECT o.Abbreviation, o.Country, o.Established, 'Organization Founded'
 FROM Mondial.organization o
-WHERE o.Established IS NOT NULL AND o.Country IS NOT NULL;
+WHERE o.Established IS NOT NULL AND o.Country IS NOT NULL
+ON DUPLICATE KEY UPDATE
+    EventType = VALUES(EventType);
 """)
 log_message(f"Added Organization events - {cursor.rowcount} rows affected")
 
